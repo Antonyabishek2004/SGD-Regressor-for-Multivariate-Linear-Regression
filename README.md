@@ -30,60 +30,78 @@ REGISTER NUMBER :  212223240009
 ```
 
 ```
+
 import numpy as np
 import pandas as pd
-from sklearn.datasets import fetch_california_housing
-from sklearn.linear_model import SGDRegressor
-from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import StandardScalerdata=fetch_california_housing()
-print(data)
-df=pd.DataFrame(data.data,columns=data.feature_names)
-df['target']=data.target
-print(df.head())
-df.tail()
-df.info()
-x=df.drop(columns=['AveOccup','target'])
-y=df[['AveOccup','target']]
-x.shape
-y.shape
-x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=11)
-x_train.shape
-scaler_x=StandardScaler()
-scaler_y=StandardScaler()
-x_train=scaler_x.fit_transform(x_train)
-x_test=scaler_x.fit_transform(x_test)
-y_train=scaler_y.fit_transform(y_train)
-y_test=scaler_y.fit_transform(y_test)
-sgd=SGDRegressor(max_iter=1000,tol=1e-3)
-multi_output_sgd=MultiOutputRegressor(sgd)
-multi_output_sgd.fit(x_train,y_train)
-Y_pred=multi_output_sgd.predict(x_test)
-Y_pred
-y_pred=scaler_y.inverse_transform(Y_pred)
-y_test=scaler_y.inverse_transform(y_test)
-mse=mean_squared_error(y_test,y_pred)
-print("Mean Squared Error :",mse)
-y_pred
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import SGDRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+data = {
+    "Area": [1200, 1500, 1800, 2000, 2200, 2500],
+    "Bedrooms": [2, 3, 3, 4, 4, 5],
+    "Age": [5, 10, 8, 12, 6, 15],
+    "Price": [200000, 250000, 270000, 300000, 320000, 400000],
+    "Occupants": [3, 4, 4, 5, 6, 7]
+}
+df = pd.DataFrame(data)
+
+# Independent variables (features)
+X = df[["Area", "Bedrooms", "Age"]]
+
+# Dependent variables (targets: Price, Occupants)
+y_price = df["Price"]
+y_occ = df["Occupants"]
+
+# Split into training and test sets
+X_train, X_test, y_price_train, y_price_test, y_occ_train, y_occ_test = train_test_split(
+    X, y_price, y_occ, test_size=0.3, random_state=42
+)
+
+# Feature scaling (important for SGD)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# -------------------
+# Model for predicting Price
+sgd_price = SGDRegressor(max_iter=1000, tol=1e-3, penalty=None, eta0=0.01, learning_rate='constant')
+sgd_price.fit(X_train_scaled, y_price_train)
+
+# Model for predicting Occupants
+sgd_occ = SGDRegressor(max_iter=1000, tol=1e-3, penalty=None, eta0=0.01, learning_rate='constant')
+sgd_occ.fit(X_train_scaled, y_occ_train)
+
+# -------------------
+# Predictions
+y_price_pred = sgd_price.predict(X_test_scaled)
+y_occ_pred = sgd_occ.predict(X_test_scaled)
+
+# -------------------
+# Evaluation
+print("House Price Prediction:")
+print("MSE:", mean_squared_error(y_price_test, y_price_pred))
+print("R² Score:", r2_score(y_price_test, y_price_pred))
+
+print("\nOccupants Prediction:")
+print("MSE:", mean_squared_error(y_occ_test, y_occ_pred))
+print("R² Score:", r2_score(y_occ_test, y_occ_pred))
+
+# -------------------
+# Example new prediction
+new_house = np.array([[2100, 4, 9]])  # [Area, Bedrooms, Age]
+new_house_scaled = scaler.transform(new_house)
+
+predicted_price = sgd_price.predict(new_house_scaled)
+predicted_occ = sgd_occ.predict(new_house_scaled)
+
+print("\nPredicted House Price:", round(predicted_price[0], 2))
+print("Predicted Number of Occupants:", round(predicted_occ[0], 0))
+
 ```
 ## OUTPUT :
 
-<img width="742" height="290" alt="image" src="https://github.com/user-attachments/assets/3df1857c-4987-407a-9432-341b6f9779b0" />
-
-<img width="824" height="214" alt="image" src="https://github.com/user-attachments/assets/b90c5d79-9bc6-46b7-ae55-cb3a1f99c8ce" />
-
-<img width="426" height="347" alt="image" src="https://github.com/user-attachments/assets/956e6c69-b659-492a-999c-d50cf5ab5ef7" />
-
-<img width="107" height="32" alt="image" src="https://github.com/user-attachments/assets/fb5dfd8a-fb46-4e7c-9032-573fb3b4d778" />
-
-<img width="106" height="29" alt="image" src="https://github.com/user-attachments/assets/6056e2d0-d368-4d62-a25d-65645bab8cf7" />
-
-<img width="383" height="174" alt="image" src="https://github.com/user-attachments/assets/03551dd4-65a2-426f-a344-9d2c2def81ff" />
-
-<img width="374" height="29" alt="image" src="https://github.com/user-attachments/assets/54a952fc-e654-4004-99e9-1f8507028d48" />
-
-<img width="337" height="151" alt="image" src="https://github.com/user-attachments/assets/f57293ee-f518-48b0-87fa-d8b0f94d1cd2" />
+<img width="470" height="224" alt="image" src="https://github.com/user-attachments/assets/ef9a4c26-8254-4a53-ab44-8735deec0431" />
 
 ## RESULT :
 
